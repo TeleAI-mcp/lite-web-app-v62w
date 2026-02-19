@@ -1,0 +1,31 @@
+name: Label Comment Bot
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check label and comment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          LABEL_NAME: ${{ github.event.label.name }}
+        run: |
+          if [ "$LABEL_NAME" = "wontfix" ]; then
+            COMMENT="After review, we have decided not to address this issue at this time."
+          elif [ "$LABEL_NAME" = "completed" ]; then
+            COMMENT="This issue has been resolved. Thank you for your contribution!"
+          elif [ "$LABEL_NAME" = "feature" ]; then
+            COMMENT="Thank you for the feature request. We will consider including this in a future release."
+          else
+            echo "Label not configured for auto-comment"
+            exit 0
+          fi
+          curl -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE_NUMBER/comments \
+            -d "{\"body\":\"$COMMENT\"}"
